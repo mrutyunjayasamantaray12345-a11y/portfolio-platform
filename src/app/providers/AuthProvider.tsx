@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signInWithGoogle: () => Promise<{ error: AuthError | null }>
+  signInWithGithub: () => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   isAdmin: boolean
 }
@@ -40,6 +42,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error }
   }
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/admin`,
+      },
+    })
+    return { error }
+  }
+
+  const signInWithGithub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/admin`,
+      },
+    })
+    return { error }
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     return { error }
@@ -48,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = !!user && session?.user?.role === 'authenticated'
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signOut, isAdmin }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signInWithGoogle, signInWithGithub, signOut, isAdmin }}>
       {children}
     </AuthContext.Provider>
   )
