@@ -41,13 +41,13 @@
 
 ### Database & Authentication
 
-- [ ] T011 Create Supabase database schema migration in supabase/migrations/001_initial_schema.sql
-- [ ] T012 [P] Create RLS policies migration in supabase/migrations/002_rls_policies.sql
-- [ ] T013 [P] Create feature flags seed data in supabase/migrations/003_feature_flags.sql
-- [ ] T014 Initialize Supabase client in src/shared/lib/supabase.ts
-- [ ] T015 [P] Create AuthProvider with Supabase Auth in src/app/providers/AuthProvider.tsx
-- [ ] T016 [P] Create FeatureFlagsProvider in src/app/providers/FeatureFlagsProvider.tsx
-- [ ] T017 [P] Create QueryProvider with TanStack Query in src/app/providers/QueryProvider.tsx
+- [X] T011 Create Supabase database schema migration in supabase/migrations/001_initial_schema.sql
+- [X] T012 [P] Create RLS policies migration in supabase/migrations/002_rls_policies.sql
+- [X] T013 [P] Create feature flags seed data in supabase/migrations/003_feature_flags.sql
+- [X] T014 Initialize Supabase client in src/shared/lib/supabase.ts
+- [X] T015 [P] Create AuthProvider with Supabase Auth in src/app/providers/AuthProvider.tsx
+- [X] T016 [P] Create FeatureFlagsProvider in src/app/providers/FeatureFlagsProvider.tsx
+- [X] T017 [P] Create QueryProvider with TanStack Query in src/app/providers/QueryProvider.tsx
 
 ### Routing & Layout
 
