@@ -5,6 +5,16 @@
 **Status**: Draft  
 **Input**: User description: "Personal Portfolio Platform - Full-stack React+Vite+Capacitor+Supabase platform with portfolio, resume, blog, apps hub, AdSense monetization, GA4/GSC analytics, admin-only CMS, public-first architecture, mobile apps, SEO optimization, and complete legal compliance"
 
+## Clarifications
+
+### Session 2026-04-19
+
+- Q: Comment moderation strategy - how should comments be handled? → A: All comments auto-approve with spam filtering, admin can delete/hide after the fact
+- Q: Image upload size limits and handling strategy? → A: 5MB limit with automatic compression to WebP/AVIF on upload
+- Q: Newsletter email delivery method? → A: Simple transactional email via Supabase Edge Functions with SMTP, manual newsletter sending from admin
+- Q: Rate limiting strategy for public form submissions? → A: 5 per minute, 20 per hour, 100 per day per IP with honeypot field for bot detection; rate limit state stored in Supabase/Upstash Redis
+- Q: Analytics data retention in Supabase cache? → A: 90 days cached in Supabase, GA4 for long-term trends
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Public Content Discovery (Priority: P1)
@@ -111,7 +121,7 @@ The site owner toggles major platform sections (blog, portfolio, apps hub, newsl
 2. **Given** the owner is in admin site settings, **When** they update the site tagline and primary color, **Then** changes are reflected immediately on the public site
 3. **Given** the owner is in admin legal pages, **When** they edit the privacy policy with the rich text editor, **Then** the updated policy is saved and displayed on the public privacy page
 4. **Given** the owner enables the newsletter feature, **When** visitors subscribe, **Then** email addresses are collected and the owner can export the subscriber list
-5. **Given** the owner enables comments on blog articles, **When** visitors submit comments, **Then** comments are held for moderation and the owner can approve or reject them
+5. **Given** the owner enables comments on blog articles, **When** visitors submit comments, **Then** comments are auto-approved and displayed immediately with spam filtering applied
 
 ---
 
@@ -120,8 +130,9 @@ The site owner toggles major platform sections (blog, portfolio, apps hub, newsl
 - What happens when a visitor tries to access /admin without authentication? → They are redirected to the login page
 - How does the system handle invalid AdSense publisher IDs? → The integration shows an error status and provides troubleshooting guidance
 - What happens when Google Indexing API rate limits are exceeded? → Failed submissions are queued and retried with exponential backoff
-- How does the system handle image uploads exceeding size limits? → The upload is rejected with a clear error message indicating the maximum file size
-- What happens when a visitor submits a contact form with invalid email format? → Client-side validation prevents submission and displays an error message
+- How does the system handle image uploads exceeding size limits? → The upload is rejected with a clear error message indicating the 5MB maximum file size
+- What happens when a visitor submits a contact form with invalid email format? → Client-side validation prevents submission and displays an error message; honeypot field silently rejects bot submissions
+- How does the system handle rate limit violations on contact/newsletter forms? → Submissions exceeding limits (5/min, 20/hour, 100/day per IP) are rejected with a clear error message indicating retry timing
 - How does the system handle concurrent edits to the same blog article? → Last write wins, with a warning if the article was modified since the editor loaded it
 - What happens when AdSense ads fail to load due to ad blockers? → The ad slots remain empty without breaking page layout
 - How does the system handle visitors who decline cookie consent? → Ads and analytics scripts are not loaded, and the site remains fully functional for content consumption
@@ -150,13 +161,13 @@ The site owner toggles major platform sections (blog, portfolio, apps hub, newsl
 #### Content Management System
 - **FR-012**: Admin MUST be able to create, edit, publish, schedule, and delete blog articles with rich text editor
 - **FR-013**: Admin MUST be able to add SEO metadata (title, description, keywords, Open Graph tags) to blog articles
-- **FR-014**: Admin MUST be able to upload and manage images for blog articles with automatic optimization
+- **FR-014**: Admin MUST be able to upload and manage images for blog articles with automatic optimization (5MB max file size, automatic compression to WebP/AVIF)
 - **FR-015**: Admin MUST be able to create, edit, and delete portfolio projects with images, descriptions, tech stack, and links
 - **FR-016**: Admin MUST be able to update resume sections (experience, education, skills, certifications) with structured data
 - **FR-017**: Admin MUST be able to create, edit, and delete apps in the apps hub with descriptions, icons, and links
-- **FR-018**: Admin MUST be able to moderate comments (approve, reject, delete) on blog articles
+- **FR-018**: System MUST auto-approve all comments with spam filtering; admin MUST be able to delete or hide comments after publication
 - **FR-019**: Admin MUST be able to view and manage contact form submissions with status tracking (new, read, replied, archived)
-- **FR-020**: Admin MUST be able to view and export newsletter subscribers
+- **FR-020**: Admin MUST be able to view and export newsletter subscribers; Admin MUST be able to compose and send newsletter emails to all active subscribers via Supabase Edge Functions with SMTP
 
 #### AdSense Integration
 - **FR-021**: System MUST display a cookie consent banner to first-time visitors requesting permission for ads and analytics
@@ -204,7 +215,7 @@ The site owner toggles major platform sections (blog, portfolio, apps hub, newsl
 - **FR-053**: System MUST achieve Core Web Vitals in green (LCP < 2.5s, FID < 100ms, CLS < 0.1)
 - **FR-054**: System MUST implement code splitting and lazy loading for all routes and components
 - **FR-055**: System MUST sanitize and validate all user inputs to prevent XSS and SQL injection
-- **FR-056**: System MUST implement rate limiting on contact form and newsletter subscription endpoints
+- **FR-056**: System MUST implement rate limiting on contact form and newsletter subscription endpoints (5 submissions per minute, 20 per hour, 100 per day per IP address); System MUST include honeypot fields for bot detection; Rate limit state MUST be stored in Supabase/Upstash Redis for stateless Edge Functions
 - **FR-057**: System MUST enforce HTTPS for all connections
 - **FR-058**: System MUST implement security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
 - **FR-059**: System MUST meet WCAG 2.1 AA accessibility standards (semantic HTML, ARIA labels, keyboard navigation, color contrast)
@@ -219,7 +230,7 @@ The site owner toggles major platform sections (blog, portfolio, apps hub, newsl
 - **Resume Section**: Represents a section of the resume (experience, education, skills, certifications) with type, title, and sort order
 - **Resume Entry**: Represents an item within a resume section with title, organization, location, dates, description, achievements, and tech used
 - **App**: Represents a micro-app in the apps hub with name, description, icon, links, tech stack, status, and launch date
-- **Comment**: Represents a visitor comment on content with guest name, email, body, status (pending/approved/spam/deleted), and moderation metadata
+- **Comment**: Represents a visitor comment on content with guest name, email, body, status (published/spam/deleted), spam score, and moderation metadata
 - **Contact Submission**: Represents a contact form submission with name, email, subject, message, status (new/read/replied/archived), and UTM tracking
 - **Newsletter Subscriber**: Represents an email subscriber with email, name, status (active/unsubscribed/bounced), source, and tags
 - **Site Settings**: Represents configuration key-value pairs organized by category (general, SEO, AdSense, GA4, GSC, legal, social)
@@ -259,10 +270,10 @@ The site owner toggles major platform sections (blog, portfolio, apps hub, newsl
 - The platform will be deployed on a reliable hosting provider with 99.9% uptime SLA (Vercel, Netlify, or similar)
 - Supabase free tier or paid plan will be used for backend services (database, auth, storage, edge functions)
 - The site owner will handle legal compliance for their specific jurisdiction (GDPR, CCPA, etc.) using the provided legal page templates
-- Email delivery for notifications will use a transactional email service (SendGrid, Mailgun, or Supabase Edge Functions with SMTP)
+- Email delivery for notifications will use a transactional email service (Supabase Edge Functions with SMTP); newsletter emails will be sent manually by admin via the admin dashboard to all active subscribers
 - Image optimization and CDN delivery will be handled by the hosting provider or a dedicated service (Cloudinary, Imgix, or similar)
 - The platform will support English language content initially, with internationalization as a future enhancement
 - AdSense approval will be pursued after the platform has at least 20 published blog articles and consistent traffic
 - Push notifications for mobile apps will use Firebase Cloud Messaging (FCM) for both iOS and Android
 - The site owner will be the sole admin user; multi-admin support is out of scope for v1
-- Analytics data will be cached in Supabase for historical analysis beyond GA4's default retention period
+- Analytics data will be cached in Supabase for 90 days for historical analysis; GA4 retains data per its native retention policy for long-term trends
